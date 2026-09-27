@@ -1,0 +1,376 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pharmacy {
+  id                    String    @id @default(uuid())
+  name                  String
+  phone                 String
+  address               String
+  adminName             String
+  status                String    @default("ACTIVE") // ACTIVE, TRIAL, BLOCKED, DELETED
+  trialStartDate        DateTime?
+  trialEndDate          DateTime?
+  subscriptionType      String?   @default("TRIAL") // TRIAL, MONTHLY
+  subscriptionStartDate DateTime?
+  subscriptionEndDate   DateTime?
+  taxRate               Float     @default(0)
+  taxIncluded           Boolean   @default(false)
+  notes                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  users                 User[]
+  subscriptions         Subscription[]
+  medicines             Medicine[]
+  categories            Category[]
+  manufacturers         Manufacturer[]
+  suppliers             Supplier[]
+  batches               ProductBatch[]
+  inventoryTransactions InventoryTransaction[]
+  sales                 Sale[]
+  customers             Customer[]
+  returns               Return[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+
+  @@index([status])
+}
+
+model User {
+  id           String    @id @default(uuid())
+  pharmacyId   String?
+  role         String    // SUPER_ADMIN, PHARMACY_ADMIN, WAREHOUSEMAN, CASHIER
+  fullName     String
+  username     String    @unique
+  passwordHash String
+  phone        String?
+  status       String    @default("ACTIVE") // ACTIVE, INACTIVE, BLOCKED
+  permissions  String?   // JSON array or comma separated
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  pharmacy     Pharmacy? @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  sales        Sale[]
+  transactions InventoryTransaction[]
+  returns      Return[]
+  auditLogs    AuditLog[]
+
+  @@index([pharmacyId])
+  @@index([role])
+}
+
+model Subscription {
+  id            String    @id @default(uuid())
+  pharmacyId   String
+  planName      String    @default("Oylik obuna (30 kun)")
+  durationDays  Int       @default(30)
+  startDate     DateTime
+  endDate       DateTime
+  price         Float     @default(0)
+  status        String    @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
+  activatedBy   String?
+  paymentMethod String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  pharmacy      Pharmacy  @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+
+  @@index([pharmacyId])
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  pharmacyId String
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  pharmacy    Pharmacy   @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  medicines   Medicine[]
+
+  @@unique([pharmacyId, name])
+  @@index([pharmacyId])
+}
+
+model Manufacturer {
+  id          String     @id @default(uuid())
+  pharmacyId String
+  name        String
+  country     String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  pharmacy    Pharmacy   @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  medicines   Medicine[]
+
+  @@unique([pharmacyId, name])
+  @@index([pharmacyId])
+}
+
+model Medicine {
+  id             String         @id @default(uuid())
+  pharmacyId    String
+  name           String
+  barcode        String?
+  qrCode         String?
+  categoryId     String?
+  manufacturerId String?
+  salePrice      Float          @default(0)
+  minStock       Int            @default(5)
+  unit           String         @default("dona")
+  description    String?
+  status         String         @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  pharmacy       Pharmacy       @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  category       Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  manufacturer   Manufacturer?  @relation(fields: [manufacturerId], references: [id], onDelete: SetNull)
+  batches        ProductBatch[]
+  saleItems      SaleItem[]
+  returnItems    ReturnItem[]
+  transactions   InventoryTransaction[]
+
+  @@index([pharmacyId])
+  @@index([barcode])
+  @@index([qrCode])
+}
+
+model Supplier {
+  id             String         @id @default(uuid())
+  pharmacyId    String
+  name           String
+  phone          String?
+  address        String?
+  contactPerson  String?
+  totalPurchases Float          @default(0)
+  totalPaid      Float          @default(0)
+  debt           Float          @default(0)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  pharmacy       Pharmacy       @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  batches        ProductBatch[]
+
+  @@index([pharmacyId])
+}
+
+model ProductBatch {
+  id              String         @id @default(uuid())
+  pharmacyId     String
+  medicineId      String
+  batchNumber     String
+  initialQuantity Int            @default(0)
+  currentQuantity Int            @default(0)
+  purchasePrice   Float          @default(0)
+  salePrice       Float          @default(0)
+  receivedDate    DateTime       @default(now())
+  expiryDate      DateTime
+  supplierId      String?
+  status          String         @default("NORMAL") // NORMAL, APPROACHING, EXPIRED
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  pharmacy        Pharmacy       @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  medicine        Medicine       @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  supplier        Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  saleItems       SaleItem[]
+  returnItems     ReturnItem[]
+  transactions    InventoryTransaction[]
+
+  @@index([pharmacyId])
+  @@index([medicineId])
+  @@index([expiryDate])
+  @@index([pharmacyId, batchNumber])
+}
+
+model InventoryTransaction {
+  id          String        @id @default(uuid())
+  pharmacyId String
+  medicineId  String
+  batchId     String?
+  type        String        // INFLOW, OUTFLOW_SALE, OUTFLOW_RETURN, ADJUSTMENT
+  quantity    Int
+  unitPrice   Float         @default(0)
+  notes       String?
+  createdById String?
+  createdAt   DateTime      @default(now())
+
+  pharmacy    Pharmacy      @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  medicine    Medicine      @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  batch       ProductBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  createdBy   User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([pharmacyId])
+  @@index([medicineId])
+}
+
+model Customer {
+  id             String    @id @default(uuid())
+  pharmacyId    String
+  name           String
+  phone          String?
+  totalSpent     Float     @default(0)
+  purchasesCount Int       @default(0)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  pharmacy       Pharmacy  @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  sales          Sale[]
+
+  @@index([pharmacyId])
+  @@index([phone])
+}
+
+model Sale {
+  id             String     @id @default(uuid())
+  pharmacyId    String
+  receiptNumber  String     @unique
+  idempotencyKey String?    @unique
+  cashierId      String
+  customerId     String?
+  totalAmount    Float      @default(0)
+  discountAmount Float      @default(0)
+  taxRate        Float      @default(0)
+  taxAmount      Float      @default(0)
+  payableAmount  Float      @default(0)
+  paidAmount     Float      @default(0)
+  changeAmount   Float      @default(0)
+  paymentMethod  String     @default("CASH") // CASH, CARD, ELECTRONIC
+  status         String     @default("COMPLETED") // COMPLETED, CANCELLED, REFUNDED
+  notes          String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  pharmacy       Pharmacy   @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  cashier        User       @relation(fields: [cashierId], references: [id])
+  customer       Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items          SaleItem[]
+  payments       Payment[]
+  returns        Return[]
+
+  @@index([pharmacyId])
+  @@index([cashierId])
+  @@index([receiptNumber])
+  @@index([createdAt])
+}
+
+model SaleItem {
+  id            String       @id @default(uuid())
+  saleId        String
+  medicineId    String
+  batchId       String
+  quantity      Int
+  unitPrice     Float
+  discount      Float        @default(0)
+  totalPrice    Float
+  purchasePrice Float        @default(0)
+  createdAt     DateTime     @default(now())
+
+  sale          Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  medicine      Medicine     @relation(fields: [medicineId], references: [id])
+  batch         ProductBatch @relation(fields: [batchId], references: [id])
+
+  @@index([saleId])
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  pharmacyId   String
+  saleId        String?
+  amount        Float
+  paymentMethod String
+  status        String    @default("SUCCESS")
+  createdAt     DateTime  @default(now())
+
+  sale          Sale?     @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  @@index([pharmacyId])
+  @@index([saleId])
+}
+
+model Return {
+  id                String       @id @default(uuid())
+  pharmacyId       String
+  saleId            String
+  receiptNumber     String
+  returnedById      String
+  totalRefundAmount Float
+  reason            String?
+  createdAt         DateTime     @default(now())
+
+  pharmacy          Pharmacy     @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  sale              Sale         @relation(fields: [saleId], references: [id])
+  returnedBy        User         @relation(fields: [returnedById], references: [id])
+  items             ReturnItem[]
+
+  @@index([pharmacyId])
+  @@index([saleId])
+}
+
+model ReturnItem {
+  id              String       @id @default(uuid())
+  returnId        String
+  saleItemId      String
+  medicineId      String
+  batchId         String
+  quantity        Int
+  refundUnitPrice Float
+  totalRefund     Float
+  createdAt       DateTime     @default(now())
+
+  returnObj       Return       @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  medicine        Medicine     @relation(fields: [medicineId], references: [id])
+  batch           ProductBatch @relation(fields: [batchId], references: [id])
+
+  @@index([returnId])
+}
+
+model Notification {
+  id           String    @id @default(uuid())
+  pharmacyId   String
+  title        String
+  message      String
+  type         String    // LOW_STOCK, EXPIRY_APPROACHING, EXPIRED, TRIAL_EXPIRING, SUB_EXPIRING, SUB_EXPIRED, SYSTEM
+  referenceKey String?
+  isRead       Boolean   @default(false)
+  isDeleted    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  pharmacy     Pharmacy  @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+
+  @@unique([pharmacyId, type, referenceKey])
+  @@index([pharmacyId])
+  @@index([isRead])
+  @@index([isDeleted])
+  @@index([pharmacyId, referenceKey])
+}
+
+model AuditLog {
+  id         String    @id @default(uuid())
+  pharmacyId String?
+  userId     String?
+  userName   String?
+  action     String    // DORI_QOSHILDI, SOTUV_QILINDI, etc.
+  entity     String    // Medicine, Sale, Pharmacy, etc.
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+
+  pharmacy   Pharmacy? @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([pharmacyId])
+  @@index([createdAt])
+}

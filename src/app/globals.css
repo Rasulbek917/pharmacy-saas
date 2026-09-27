@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #16A34A;
+  --navy: #0F172A;
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --text: #334155;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Professional Multi-Target Print Stylesheet */
+@media print {
+  /* 1. Page settings */
+  @page {
+    margin: 8mm;
+    size: auto;
+  }
+
+  /* 2. Hide all chrome, nav, sidebar, action buttons, modals backdrop */
+  aside,
+  header,
+  nav,
+  button,
+  input,
+  select,
+  textarea,
+  .no-print {
+    display: none !important;
+  }
+
+  /* 3. Base reset for clean white paper printing */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    box-shadow: none !important;
+  }
+
+  /* CASE A: Printing Receipt */
+  body.printing-receipt *,
+  body:has(#printable-receipt) * {
+    visibility: hidden;
+  }
+  body.printing-receipt #printable-receipt,
+  body.printing-receipt #printable-receipt *,
+  body:has(#printable-receipt) #printable-receipt,
+  body:has(#printable-receipt) #printable-receipt * {
+    visibility: visible;
+  }
+  body.printing-receipt #printable-receipt,
+  body:has(#printable-receipt) #printable-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0 auto;
+    padding: 2mm;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+  /* The receipt is absolute (out of flow) in print, so the modal shell would
+     collapse to height 0 and its overflow-hidden would clip the receipt away.
+     Neutralize the shell so the receipt lays out against the page box. */
+  body.printing-receipt div:has(> #printable-receipt),
+  body.printing-receipt div:has(> div > #printable-receipt) {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    max-width: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* CASE B: Printing Report (A4 Layout) */
+  body.printing-report *,
+  body:has(#printable-report) * {
+    visibility: hidden;
+  }
+  body.printing-report #printable-report,
+  body.printing-report #printable-report *,
+  body:has(#printable-report) #printable-report,
+  body:has(#printable-report) #printable-report * {
+    visibility: visible;
+  }
+  body.printing-report #printable-report,
+  body:has(#printable-report) #printable-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 6mm !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+
+  /* Repeated table headers on multi-page print */
+  thead {
+    display: table-header-group;
+  }
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* CASE C: Printing QR Label (58mm thermal sticker).
+     The label is portaled to <body> (.qr-print-area), so no modal
+     ancestor (fixed/relative/max-width) can affect the print layout. */
+  body.printing-qr * {
+    visibility: hidden;
+  }
+  body.printing-qr .qr-print-area,
+  body.printing-qr .qr-print-area * {
+    visibility: visible;
+  }
+  body.printing-qr .qr-print-area {
+    page: qr-label;
+    display: block;
+    /* In-flow (not absolute): an abs-positioned box inherits the page context
+       of its containing block (the ICB = default page), which would keep the
+       sheet at Letter and never activate @page qr-label. */
+    position: static;
+    width: 58mm;
+    box-sizing: border-box;
+    padding: 1.5mm 3mm;
+    text-align: center;
+    color: #000000 !important;
+    background: #ffffff !important;
+    border: none;
+    box-shadow: none;
+  }
+  /* Hidden in-flow app content would keep page 1 on the default paper,
+     so @page qr-label (58x60mm) never applies. Drop its layout while printing. */
+  body.printing-qr > *:not(.qr-print-area) {
+    display: none !important;
+  }
+
+  .qr-print-pharmacy {
+    font-size: 7pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #000000;
+    border-bottom: 1px solid #000000;
+    padding-bottom: 1mm;
+    margin: 0 0 1.5mm;
+  }
+  .qr-print-img {
+    display: block;
+    width: 30mm;
+    height: 30mm;
+    margin: 0 auto 1mm;
+    image-rendering: pixelated;
+  }
+  .qr-print-name {
+    font-size: 9pt;
+    font-weight: 800;
+    color: #000000;
+    margin: 0 0 0.5mm;
+    line-height: 1.2;
+  }
+  .qr-print-cat {
+    font-size: 7pt;
+    color: #000000;
+    margin: 0 0 0.5mm;
+  }
+  .qr-print-price {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #000000;
+    margin: 0 0 0.5mm;
+  }
+  .qr-print-code {
+    font-size: 6.5pt;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #000000;
+    margin: 0;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
+
+/* Named page for QR stickers: label printers get exact 58mm media,
+   no giant A4 sheet with a tiny label in the corner. */
+@page qr-label {
+  size: 58mm 60mm;
+  margin: 0;
+}
+
+/* The print-only label must never appear on screen */
+@media screen {
+  .qr-print-area {
+    display: none !important;
+  }
+  .print-only {
+    display: none !important;
+  }
+}
+
+/* Smooth custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
