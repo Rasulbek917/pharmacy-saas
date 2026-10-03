@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -332,7 +333,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Reports API error:", error);
+    logger.error("Reports API error", { error: error });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }

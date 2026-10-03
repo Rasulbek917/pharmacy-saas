@@ -42,6 +42,9 @@ prisma/restore-test.db
 # backups (maxfiy ma'lumot)
 backups/
 
+# texnik loglar
+logs/
+
 # IDE
 .idea/
 .vscode/

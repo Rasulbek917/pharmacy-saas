@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { formatCurrency, formatDate, getPharmacyStatusBadge } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function SuperAdminDashboard() {
   const [pharmacies, setPharmacies] = useState<any[]>([]);
@@ -57,7 +58,7 @@ export default function SuperAdminDashboard() {
         setActionMsg({ text: data.message, type: "success" });
         loadPharmacies();
       } else {
-        setActionMsg({ text: data.error || "Xatolik yuz berdi", type: "error" });
+        setActionMsg({ text: getErrorMessage(data.error, "Xatolik yuz berdi"), type: "error" });
       }
     } catch (e) {
       setActionMsg({ text: "Server bilan bog'lanishda xatolik", type: "error" });

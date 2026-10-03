@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { CreditCard, Zap, CheckCircle, Clock, ShieldAlert, RefreshCw } from "lucide-react";
 import { formatDate, getPharmacyStatusBadge } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function SubscriptionsPage() {
   const [pharmacies, setPharmacies] = useState<any[]>([]);
@@ -60,7 +61,7 @@ export default function SubscriptionsPage() {
         alert(data.message);
         loadData();
       } else {
-        alert(data.error || "Xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "Xatolik yuz berdi"));
       }
     } catch (e) {
       alert("Server xatosi");

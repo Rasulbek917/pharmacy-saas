@@ -14,12 +14,14 @@ import {
 import { formatCurrency } from "@/lib/formatters";
 import BarcodeScannerModal from "@/components/scanner/BarcodeScannerModal";
 import UsbBarcodeDetector from "@/components/scanner/UsbBarcodeDetector";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function InflowPage() {
   const [medicines, setMedicines] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [selectedMedicine, setSelectedMedicine] = useState<any | null>(null);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
+  const [manualCode, setManualCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -53,8 +55,9 @@ export default function InflowPage() {
     }
   };
 
-  const handleBarcodeScanned = (code: string) => {
+  const handleBarcodeScanned = (code: string): boolean => {
     const trimmed = code.trim();
+    if (!trimmed) return false;
     const found = medicines.find(
       (m) => m.barcode === trimmed || m.qrCode === trimmed || m.name.toLowerCase().includes(trimmed.toLowerCase())
     );
@@ -62,8 +65,21 @@ export default function InflowPage() {
     if (found) {
       selectMedicine(found);
       setSuccessMessage(`Dori topildi: "${found.name}"`);
+      return true;
     } else {
       setErrorMessage(`"${code}" kodi bo‘yicha dori topilmadi. Avval dori katalogiga qo‘shing.`);
+      return false;
+    }
+  };
+
+  const handleManualSearch = () => {
+    const code = manualCode.trim();
+    if (!code) {
+      setErrorMessage("Avval shtrix-kod, QR kod yoki dori nomini kiriting!");
+      return;
+    }
+    if (handleBarcodeScanned(code)) {
+      setManualCode("");
     }
   };
 
@@ -109,7 +125,7 @@ export default function InflowPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setErrorMessage(data.error || "Omborga kirim qilishda xatolik");
+        setErrorMessage(getErrorMessage(data.error, "Omborga kirim qilishda xatolik"));
         setIsSubmitting(false);
         return;
       }
@@ -219,20 +235,44 @@ export default function InflowPage() {
 
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1.5">
-              USB Skaner yoki Kamera orqali:
+              Kodni qo‘lda yozing yoki kamerani yoqing:
             </label>
             <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Barcode className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleManualSearch();
+                    }
+                  }}
+                  placeholder="Shtrix-kod / QR / nom (masalan 4780003456789)"
+                  className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2.5 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none font-mono"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleManualSearch}
+                title="Qidirish"
+                className="flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-700 hover:bg-slate-50"
+              >
+                <Search className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={() => setShowCameraScanner(true)}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
+                title="Kamera orqali skanerlash"
+                className="flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-emerald-700 hover:bg-emerald-100"
               >
                 <Camera className="h-4 w-4" />
-                <span>Kamera skanerini ochish</span>
               </button>
             </div>
             <p className="mt-1 text-[11px] text-slate-400">
-              * Noutbukdagi USB shtrix-kod skanerdan to‘g‘ridan-to‘g‘ri o‘qitsangiz ham avtomatik topiladi.
+              * Kodni yozib Enter bosing yoki qidiruv tugmasini bosing. USB skanerdan o‘qitsangiz ham avtomatik topiladi.
             </p>
           </div>
         </div>

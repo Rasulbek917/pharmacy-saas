@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { manufacturerSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: manufacturers });
   } catch (error: any) {
-    console.error("Manufacturers GET error:", error);
+    logger.error("Manufacturers GET error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Ishlab chiqaruvchilarni yuklashda xatolik yuz berdi" } },
       { status: 500 }
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
       data: manufacturer,
     });
   } catch (error: any) {
-    console.error("Manufacturer POST error:", error);
+    logger.error("Manufacturer POST error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: error.message || "Xatolik yuz berdi" } },
       { status: 500 }

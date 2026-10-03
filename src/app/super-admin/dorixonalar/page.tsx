@@ -17,6 +17,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { formatDate, getPharmacyStatusBadge } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function PharmaciesPage() {
   const searchParams = useSearchParams();
@@ -42,6 +43,18 @@ export default function PharmaciesPage() {
 
   // Edit modal state
   const [editingPharmacy, setEditingPharmacy] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    adminName: "",
+    adminUsername: "",
+    adminPassword: "",
+    notes: "",
+  });
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     loadPharmacies();
@@ -76,7 +89,7 @@ export default function PharmaciesPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setErrorMessage(data.error || "Dorixonani qo‘shishda xatolik yuz berdi");
+        setErrorMessage(getErrorMessage(data.error, "Dorixonani qo‘shishda xatolik yuz berdi"));
         setIsSubmitting(false);
         return;
       }
@@ -100,6 +113,91 @@ export default function PharmaciesPage() {
     }
   };
 
+  const openEditModal = async (pharmacy: any) => {
+    setEditError(null);
+    setSuccessMessage(null);
+    setEditingPharmacy(pharmacy);
+    setEditForm({
+      name: pharmacy.name || "",
+      phone: pharmacy.phone || "",
+      address: pharmacy.address || "",
+      adminName: pharmacy.adminName || "",
+      adminUsername: "",
+      adminPassword: "",
+      notes: pharmacy.notes || "",
+    });
+
+    // Admin logini ro‘yxat javobida yo‘q — uni detail API dan olamiz
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/pharmacies/${pharmacy.id}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data?.users)) {
+        const admin = data.data.users.find((u: any) => u.role === "PHARMACY_ADMIN");
+        if (admin) {
+          setEditForm((prev) => ({
+            ...prev,
+            adminUsername: admin.username || "",
+            adminName: admin.fullName || prev.adminName,
+          }));
+        }
+      }
+    } catch (e) {
+      // Login yuklanmasa ham boshqa maydonlarni tahrirlash mumkin
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPharmacy) return;
+    setIsEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const payload: any = {
+        name: editForm.name,
+        phone: editForm.phone,
+        address: editForm.address,
+        adminName: editForm.adminName,
+        notes: editForm.notes || null,
+      };
+      if (editForm.adminUsername.trim()) payload.adminUsername = editForm.adminUsername.trim();
+      if (editForm.adminPassword) payload.adminPassword = editForm.adminPassword;
+
+      const res = await fetch(`/api/pharmacies/${editingPharmacy.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setEditError(getErrorMessage(data.error, "Saqlashda xatolik yuz berdi"));
+        setIsEditSubmitting(false);
+        return;
+      }
+
+      setSuccessMessage("Dorixona ma'lumotlari muvaffaqiyatli yangilandi");
+      setEditingPharmacy(null);
+      setEditForm({
+        name: "",
+        phone: "",
+        address: "",
+        adminName: "",
+        adminUsername: "",
+        adminPassword: "",
+        notes: "",
+      });
+      loadPharmacies();
+    } catch (err) {
+      setEditError("Server bilan bog'lanishda xatolik");
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
   const handleToggleBlock = async (pharmacy: any) => {
     const newStatus = pharmacy.status === "BLOCKED" ? "ACTIVE" : "BLOCKED";
     const confirmText =
@@ -119,7 +217,7 @@ export default function PharmaciesPage() {
       if (data.success) {
         loadPharmacies();
       } else {
-        alert(data.error || "Xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "Xatolik yuz berdi"));
       }
     } catch (e) {
       alert("Server xatosi");
@@ -142,7 +240,7 @@ export default function PharmaciesPage() {
         alert(data.message);
         loadPharmacies();
       } else {
-        alert(data.error || "Xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "Xatolik yuz berdi"));
       }
     } catch (e) {
       alert("Server xatosi");
@@ -335,6 +433,15 @@ export default function PharmaciesPage() {
 
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Edit */}
+                          <button
+                            onClick={() => openEditModal(pharmacy)}
+                            className="rounded-lg p-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                            title="Tahrirlash"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+
                           {/* Activate Button */}
                           <button
                             onClick={() => handleActivateSubscription(pharmacy)}
@@ -530,6 +637,160 @@ export default function PharmaciesPage() {
                   className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : "Saqlash va Trial Boshlash"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT PHARMACY MODAL */}
+      {editingPharmacy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4 sticky top-0 z-10">
+              <div className="flex items-center gap-2">
+                <Edit className="h-5 w-5 text-emerald-600" />
+                <h3 className="text-base font-bold text-slate-900">Dorixonani Tahrirlash</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingPharmacy(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              {editError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Dorixona Nomi *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Telefon Raqami *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Manzil *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.address}
+                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Izoh
+                </label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                  rows={2}
+                  placeholder="Qo‘shimcha ma'lumot (ixtiyoriy)"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                />
+              </div>
+
+              <div className="border-t border-slate-100 pt-3">
+                <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-2">
+                  Dorixona Administratori Hisobi
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700">
+                      Administrator Ismi va Familiyasi *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.adminName}
+                      onChange={(e) => setEditForm({ ...editForm, adminName: e.target.value })}
+                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700">
+                      Admin Logini *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.adminUsername}
+                      onChange={(e) => setEditForm({ ...editForm, adminUsername: e.target.value })}
+                      disabled={editLoading}
+                      placeholder={editLoading ? "Yuklanmoqda..." : "admin_login"}
+                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A] disabled:bg-slate-50 disabled:text-slate-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700">
+                      Yangi Admin Paroli
+                    </label>
+                    <input
+                      type="password"
+                      value={editForm.adminPassword}
+                      onChange={(e) => setEditForm({ ...editForm, adminPassword: e.target.value })}
+                      placeholder="O‘zgartirmasangiz bo‘sh qoldiring"
+                      autoComplete="new-password"
+                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                    />
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Bo‘sh qoldirilsa parol o‘zgarmaydi. Yangi parol kamida 5 ta belgi bo‘lsin.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditingPharmacy(null)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditSubmitting || editLoading}
+                  className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
+                >
+                  {isEditSubmitting ? "Saqlanmoqda..." : "O‘zgarishlarni Saqlash"}
                 </button>
               </div>
             </form>

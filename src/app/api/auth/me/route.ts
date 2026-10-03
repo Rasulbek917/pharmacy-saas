@@ -3,6 +3,7 @@ import { getCurrentUser, getAuthCookieName } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getDaysRemaining } from "@/lib/formatters";
 import { PharmacyStatus } from "@/types";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
+    logger.error("GET /api\auth\me\route.ts xatolik", { error: error, route: "/api\auth\me\route.ts" });
     return NextResponse.json({ success: false, user: null }, { status: 500 });
   }
 }

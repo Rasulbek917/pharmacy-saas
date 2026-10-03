@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { returnSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: returns });
   } catch (error: any) {
-    console.error("Returns GET error:", error);
+    logger.error("Returns GET error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Qaytarishlarni yuklashda xatolik yuz berdi" } },
       { status: 500 }
@@ -191,7 +192,7 @@ export async function POST(req: NextRequest) {
       data: result,
     });
   } catch (error: any) {
-    console.error("Return error:", error);
+    logger.error("Return error", { error: error });
     return NextResponse.json(
       {
         success: false,

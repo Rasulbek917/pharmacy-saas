@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Settings, Save, RefreshCw, Percent } from "lucide-react";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function PharmacySettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -52,9 +53,7 @@ export default function PharmacySettingsPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        const errMsg =
-          typeof data.error === "object" ? data.error?.message : data.error || "Saqlashda xatolik";
-        setMessage({ text: errMsg, type: "error" });
+        setMessage({ text: getErrorMessage(data.error, "Saqlashda xatolik"), type: "error" });
       } else {
         setPharmacy(data.data);
         setMessage({ text: "Sozlamalar muvaffaqiyatli saqlandi", type: "success" });

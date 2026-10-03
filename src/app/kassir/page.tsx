@@ -22,6 +22,7 @@ import BarcodeScannerModal from "@/components/scanner/BarcodeScannerModal";
 import UsbBarcodeDetector from "@/components/scanner/UsbBarcodeDetector";
 import ReceiptModal from "@/components/pos/ReceiptModal";
 import { CartItem } from "@/types";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function CashierPosPage() {
   const [medicines, setMedicines] = useState<any[]>([]);
@@ -336,11 +337,7 @@ export default function CashierPosPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        const errorMsg =
-          typeof data.error === "object"
-            ? data.error?.message || JSON.stringify(data.error)
-            : data.error || "Sotuvni yakunlashda xatolik yuz berdi";
-        alert(errorMsg);
+        alert(getErrorMessage(data.error, "Sotuvni yakunlashda xatolik yuz berdi"));
         setIsProcessing(false);
         return;
       }

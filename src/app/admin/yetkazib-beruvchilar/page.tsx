@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -72,7 +73,7 @@ export default function SuppliersPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setErrorMsg(data.error || "Xatolik yuz berdi");
+        setErrorMsg(getErrorMessage(data.error, "Xatolik yuz berdi"));
         setIsSubmitting(false);
         return;
       }
@@ -109,7 +110,7 @@ export default function SuppliersPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        alert(data.error || "Xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "Xatolik yuz berdi"));
       } else {
         alert(data.message);
         setPayingSupplier(null);

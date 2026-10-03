@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { RotateCcw, Search, CheckCircle, AlertCircle, ShoppingBag } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function ReturnsPage() {
   const [receiptNumber, setReceiptNumber] = useState("");
@@ -90,7 +91,7 @@ export default function ReturnsPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setErrorMsg(data.error || "Qaytarishda xatolik yuz berdi");
+        setErrorMsg(getErrorMessage(data.error, "Qaytarishda xatolik yuz berdi"));
         setIsSubmitting(false);
         return;
       }

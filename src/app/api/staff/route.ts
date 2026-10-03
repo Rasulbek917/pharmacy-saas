@@ -6,6 +6,7 @@ import { staffSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: staff });
   } catch (error) {
+    logger.error("GET /api\staff\route.ts xatolik", { error: error, route: "/api\staff\route.ts" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }
@@ -114,6 +116,7 @@ export async function POST(req: NextRequest) {
       data: newStaff,
     });
   } catch (error) {
+    logger.error("POST /api\staff\route.ts xatolik", { error: error, route: "/api\staff\route.ts" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }

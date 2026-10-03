@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireApiAuth } from "@/lib/tenant";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export async function POST(
@@ -91,7 +92,7 @@ export async function POST(
       data: result.updatedPharmacy,
     });
   } catch (error: any) {
-    console.error("Activate subscription error:", error);
+    logger.error("Activate subscription error", { error: error });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }

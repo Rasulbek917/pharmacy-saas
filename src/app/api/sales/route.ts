@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { saleSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: sales });
   } catch (error: any) {
-    console.error("Sales GET error:", error);
+    logger.error("Sales GET error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Savdolarni yuklashda xatolik yuz berdi" } },
       { status: 500 }
@@ -424,7 +425,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Sale POST error:", error);
+    logger.error("Sale POST error", { error: error });
     return NextResponse.json(
       {
         success: false,

@@ -18,6 +18,9 @@ const pg = new EmbeddedPostgres({
   password: "postgres",
   port: PORT,
   persistent: true,
+  // Windows locale defaults to WIN1252, which cannot store UTF-8 text (Uzbek
+  // names, "№", ...). Force UTF8 like every production PostgreSQL setup.
+  initdbFlags: ["--encoding=UTF8", "--locale=C"],
 });
 
 if (!existsSync(join(dataDir, "PG_VERSION"))) {

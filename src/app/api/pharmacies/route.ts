@@ -7,6 +7,7 @@ import { createPharmacySchema } from "@/lib/validations";
 export const dynamic = "force-dynamic";
 import { getDaysRemaining } from "@/lib/formatters";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: enriched });
   } catch (error: any) {
-    console.error("Pharmacies GET error:", error);
+    logger.error("Pharmacies GET error", { error: error });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
       data: result.pharmacy,
     });
   } catch (error: any) {
-    console.error("Create pharmacy error:", error);
+    logger.error("Create pharmacy error", { error: error });
     return NextResponse.json(
       { success: false, error: "Dorixonani yaratishda xatolik yuz berdi" },
       { status: 500 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { supplierSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: suppliers });
   } catch (error) {
+    logger.error("GET /api\suppliers\route.ts xatolik", { error: error, route: "/api\suppliers\route.ts" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }
@@ -81,6 +83,7 @@ export async function POST(req: NextRequest) {
       data: supplier,
     });
   } catch (error) {
+    logger.error("POST /api\suppliers\route.ts xatolik", { error: error, route: "/api\suppliers\route.ts" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pill, Lock, User, AlertCircle, ShieldAlert, ArrowRight } from "lucide-react";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function LoginPage() {
         if (data.isBlocked) {
           setIsBlocked(true);
         } else {
-          setErrorMsg(data.error || "Login yoki parol noto‘g‘ri!");
+          setErrorMsg(getErrorMessage(data.error, "Login yoki parol noto‘g‘ri!"));
         }
         setIsLoading(false);
         return;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: customers });
   } catch (error) {
+    logger.error("GET /api\customers\route.ts xatolik", { error: error, route: "/api\customers\route.ts" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
       data: customer,
     });
   } catch (error) {
+    logger.error("POST /api\customers\route.ts xatolik", { error: error, route: "/api\customers\route.ts" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }

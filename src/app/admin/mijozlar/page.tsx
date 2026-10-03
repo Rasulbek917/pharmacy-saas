@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Users, Plus, Search, Phone, ShoppingBag, X, CheckCircle } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -48,7 +49,7 @@ export default function CustomersPage() {
         setFormData({ name: "", phone: "+998 ", notes: "" });
         loadCustomers();
       } else {
-        alert(data.error || "Xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "Xatolik yuz berdi"));
       }
     } catch (e) {
       alert("Server xatosi");

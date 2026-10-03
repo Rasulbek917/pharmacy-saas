@@ -5,6 +5,17 @@ export const loginSchema = z.object({
   password: z.string().min(5, "Parol kamida 5 ta belgidan iborat bo‘lishi kerak"),
 });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Joriy parolni kiriting"),
+    newPassword: z.string().min(5, "Yangi parol kamida 5 ta belgidan iborat bo‘lishi kerak"),
+    confirmPassword: z.string().min(1, "Yangi parolni qayta kiriting"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Yangi parol va tasdiqlash paroli mos kelmadi",
+    path: ["confirmPassword"],
+  });
+
 export const createPharmacySchema = z.object({
   name: z.string().min(2, "Dorixona nomi kamida 2 ta belgidan iborat bo‘lishi kerak"),
   phone: z.string().min(7, "Telefon raqami noto‘g‘ri kiritildi"),
@@ -20,6 +31,8 @@ export const updatePharmacySchema = z.object({
   phone: z.string().min(7).optional(),
   address: z.string().min(3).optional(),
   adminName: z.string().min(2).optional(),
+  adminUsername: z.string().min(3, "Admin logini kamida 3 ta belgidan iborat bo‘lishi kerak").optional(),
+  adminPassword: z.string().min(5, "Admin paroli kamida 5 ta belgidan iborat bo‘lishi kerak").optional(),
   status: z.enum(["ACTIVE", "TRIAL", "BLOCKED", "DELETED"]).optional(),
   notes: z.string().optional().nullable(),
 });
@@ -102,6 +115,15 @@ export const staffSchema = z.object({
   password: z.string().min(5, "Parol kamida 5 ta belgi bo‘lishi kerak"),
   phone: z.string().optional().nullable(),
   role: z.enum(["PHARMACY_ADMIN", "WAREHOUSEMAN", "CASHIER"]),
+});
+
+export const updateStaffSchema = z.object({
+  fullName: z.string().min(2, "Xodim ismi kamida 2 ta belgi bo‘lishi kerak").optional(),
+  username: z.string().min(3, "Login kamida 3 ta belgi bo‘lishi kerak").optional(),
+  password: z.string().min(5, "Parol kamida 5 ta belgi bo‘lishi kerak").optional(),
+  phone: z.string().optional().nullable(),
+  role: z.enum(["PHARMACY_ADMIN", "WAREHOUSEMAN", "CASHIER"]).optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "BLOCKED"]).optional(),
 });
 
 export const supplierSchema = z.object({

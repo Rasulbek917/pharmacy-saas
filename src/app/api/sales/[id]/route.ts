@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export async function GET(
@@ -40,6 +41,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: sale });
   } catch (error) {
+    logger.error("GET /api\sales\:id\route.ts xatolik", { error: error, route: "/api\sales\:id\route.ts" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthCookieName, getCurrentUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ export async function POST() {
       });
     }
   } catch (e) {
-    // Ignore audit logging error on logout
+    // Logout must succeed even if audit write fails — but never silently
+    logger.warn("POST /api/auth/logout: audit yozilmadi", { error: e, route: "/api/auth/logout" });
   }
 
   const response = NextResponse.json({

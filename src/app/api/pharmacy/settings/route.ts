@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: pharmacy });
   } catch (error) {
-    console.error("Pharmacy settings GET error:", error);
+    logger.error("Pharmacy settings GET error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Xatolik yuz berdi" } },
       { status: 500 }
@@ -81,7 +82,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: pharmacy });
   } catch (error) {
-    console.error("Pharmacy settings PATCH error:", error);
+    logger.error("Pharmacy settings PATCH error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Xatolik yuz berdi" } },
       { status: 500 }

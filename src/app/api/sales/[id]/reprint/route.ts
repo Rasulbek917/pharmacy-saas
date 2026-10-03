@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -89,7 +90,7 @@ export async function POST(
       },
     });
   } catch (error: any) {
-    console.error("Sale reprint error:", error);
+    logger.error("Sale reprint error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Xatolik yuz berdi" } },
       { status: 500 }

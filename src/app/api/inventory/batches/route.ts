@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { getExpiryStatus, getDaysRemaining } from "@/lib/formatters";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: filtered });
   } catch (error) {
-    console.error("Batches GET error:", error);
+    logger.error("Batches GET error", { error: error });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }

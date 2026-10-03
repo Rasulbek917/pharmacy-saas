@@ -19,6 +19,7 @@ import { formatCurrency } from "@/lib/formatters";
 import BarcodeScannerModal from "@/components/scanner/BarcodeScannerModal";
 import UsbBarcodeDetector from "@/components/scanner/UsbBarcodeDetector";
 import QrLabelModal from "@/components/scanner/QrLabelModal";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function MedicinesPage() {
   const [medicines, setMedicines] = useState<any[]>([]);
@@ -118,7 +119,7 @@ export default function MedicinesPage() {
         setSelectedQrMedicine(data.medicine);
         loadMedicines();
       } else {
-        alert(data.error?.message || data.error || "QR kod yaratishda xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "QR kod yaratishda xatolik yuz berdi"));
       }
     } catch (e) {
       alert("Server bilan aloqa xatosi");
@@ -138,7 +139,7 @@ export default function MedicinesPage() {
       setSelectedQrMedicine(data.medicine);
       loadMedicines();
     } else {
-      throw new Error(data.error?.message || "QR kod yangilashda xatolik");
+      throw new Error(getErrorMessage(data.error, "QR kod yangilashda xatolik"));
     }
   };
 
@@ -156,7 +157,7 @@ export default function MedicinesPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setErrorMessage(data.error?.message || data.error || "Dori vositasini saqlashda xatolik");
+        setErrorMessage(getErrorMessage(data.error, "Dori vositasini saqlashda xatolik"));
         setIsSubmitting(false);
         return;
       }
@@ -196,7 +197,7 @@ export default function MedicinesPage() {
       if (data.success) {
         loadMedicines();
       } else {
-        alert(data.error || "Xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "Xatolik yuz berdi"));
       }
     } catch (e) {
       alert("Server xatosi");

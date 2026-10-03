@@ -14,10 +14,13 @@ import {
   Menu,
   Trash2,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  KeyRound,
+  Lock
 } from "lucide-react";
 import { AuthUser } from "@/types";
 import { getRoleLabel } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 interface NavbarProps {
   user: AuthUser;
@@ -33,6 +36,12 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
   const [isClearingAll, setIsClearingAll] = useState(false);
   const [notificationError, setNotificationError] = useState<string | null>(null);
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pwdForm, setPwdForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [pwdError, setPwdError] = useState<string | null>(null);
+  const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
+  const [isChangingPwd, setIsChangingPwd] = useState(false);
 
   useEffect(() => {
     if (user.role !== "SUPER_ADMIN" && user.pharmacyId) {
@@ -83,7 +92,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setNotificationError(data.error?.message || data.error || "O‘chirishda xatolik yuz berdi");
+        setNotificationError(getErrorMessage(data.error, "O‘chirishda xatolik yuz berdi"));
         setDeletingIds((prev) => prev.filter((item) => item !== id));
         return;
       }
@@ -114,7 +123,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setNotificationError(data.error?.message || data.error || "Tozalashda xatolik yuz berdi");
+        setNotificationError(getErrorMessage(data.error, "Tozalashda xatolik yuz berdi"));
         setIsClearingAll(false);
         return;
       }
@@ -136,6 +145,52 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
       router.refresh();
     } catch (e) {
       setIsLoggingOut(false);
+    }
+  };
+
+  const openPasswordModal = () => {
+    setPwdForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setPwdError(null);
+    setPwdSuccess(null);
+    setShowPasswordModal(true);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdError(null);
+    setPwdSuccess(null);
+
+    if (!pwdForm.currentPassword || !pwdForm.newPassword || !pwdForm.confirmPassword) {
+      setPwdError("Barcha maydonlarni to‘ldiring");
+      return;
+    }
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      setPwdError("Yangi parol va tasdiqlash paroli mos kelmadi");
+      return;
+    }
+
+    setIsChangingPwd(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pwdForm),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setPwdError(getErrorMessage(data.error, "Parolni almashtirishda xatolik yuz berdi"));
+        return;
+      }
+      setPwdSuccess(data.message || "Parol muvaffaqiyatli almashtirildi");
+      setPwdForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPwdSuccess(null);
+      }, 1800);
+    } catch (err) {
+      setPwdError("Server bilan bog‘lanishda xatolik. Qayta urinib ko‘ring.");
+    } finally {
+      setIsChangingPwd(false);
     }
   };
 
@@ -331,6 +386,16 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
           </span>
         </div>
 
+        {/* Change Password Button */}
+        <button
+          onClick={openPasswordModal}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+          title="Parolni almashtirish"
+        >
+          <KeyRound className="h-4 w-4" />
+          <span className="hidden sm:inline">Parol</span>
+        </button>
+
         {/* Logout Button */}
         <button
           onClick={handleLogout}
@@ -342,6 +407,115 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
           <span className="hidden sm:inline">Chiqish</span>
         </button>
       </div>
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          onClick={() => !isChangingPwd && setShowPasswordModal(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
+                <Lock className="h-5 w-5 text-emerald-600" />
+                Parolni almashtirish
+              </h3>
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                title="Yopish"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Joriy parol
+                </label>
+                <input
+                  type="password"
+                  value={pwdForm.currentPassword}
+                  onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
+                  autoComplete="current-password"
+                  required
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Yangi parol
+                </label>
+                <input
+                  type="password"
+                  value={pwdForm.newPassword}
+                  onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
+                  autoComplete="new-password"
+                  required
+                  minLength={5}
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Yangi parolni tasdiqlash
+                </label>
+                <input
+                  type="password"
+                  value={pwdForm.confirmPassword}
+                  onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
+                  autoComplete="new-password"
+                  required
+                  minLength={5}
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                />
+              </div>
+
+              {pwdError && (
+                <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{pwdError}</span>
+                </div>
+              )}
+
+              {pwdSuccess && (
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-700">
+                  <CheckCircle className="h-4 w-4 shrink-0" />
+                  <span>{pwdSuccess}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  disabled={isChangingPwd}
+                  className="flex items-center gap-2 rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-[#15803D] disabled:opacity-50"
+                >
+                  {isChangingPwd ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <KeyRound className="h-4 w-4" />
+                  )}
+                  <span>{isChangingPwd ? "Almashtirilmoqda..." : "Parolni almashtirish"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

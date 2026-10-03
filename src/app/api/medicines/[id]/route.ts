@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { medicineSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,7 @@ export async function GET(
       },
     });
   } catch (error) {
+    logger.error("GET /api/medicines/:id xatolik", { error, route: "/api/medicines/:id" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }
@@ -113,6 +115,7 @@ export async function PATCH(
       data: updated,
     });
   } catch (error) {
+    logger.error("PATCH /api/medicines/:id xatolik", { error, route: "/api/medicines/:id" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }
@@ -166,6 +169,7 @@ export async function DELETE(
       message: "Dori vositasi muvaffaqiyatli o‘chirildi",
     });
   } catch (error) {
+    logger.error("DELETE /api/medicines/:id xatolik", { error, route: "/api/medicines/:id" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }

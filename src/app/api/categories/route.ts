@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { categorySchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: categories });
   } catch (error: any) {
-    console.error("Categories GET error:", error);
+    logger.error("Categories GET error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Kategoriyalarni yuklashda xatolik yuz berdi" } },
       { status: 500 }
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
       data: category,
     });
   } catch (error: any) {
-    console.error("Category POST error:", error);
+    logger.error("Category POST error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: error.message || "Xatolik yuz berdi" } },
       { status: 500 }

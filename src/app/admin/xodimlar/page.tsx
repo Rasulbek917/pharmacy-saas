@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { UserCog, Plus, Search, CheckCircle, X, Shield, Lock, Trash2, RefreshCw } from "lucide-react";
+import { UserCog, Plus, Search, CheckCircle, X, Shield, Lock, Trash2, RefreshCw, Edit, AlertCircle } from "lucide-react";
 import { getRoleLabel, formatDate } from "@/lib/formatters";
+import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function StaffPage() {
   const [staff, setStaff] = useState<any[]>([]);
@@ -18,6 +19,16 @@ export default function StaffPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Edit modal state
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    username: "",
+    password: "",
+  });
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     loadStaff();
@@ -52,7 +63,7 @@ export default function StaffPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setErrorMsg(data.error || "Xodimni qo‘shishda xatolik");
+        setErrorMsg(getErrorMessage(data.error, "Xodimni qo‘shishda xatolik"));
         setIsSubmitting(false);
         return;
       }
@@ -90,7 +101,7 @@ export default function StaffPage() {
       if (data.success) {
         loadStaff();
       } else {
-        alert(data.error || "Xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "Xatolik yuz berdi"));
       }
     } catch (e) {
       alert("Server xatosi");
@@ -106,10 +117,57 @@ export default function StaffPage() {
       if (data.success) {
         loadStaff();
       } else {
-        alert(data.error || "Xatolik yuz berdi");
+        alert(getErrorMessage(data.error, "Xatolik yuz berdi"));
       }
     } catch (e) {
       alert("Server xatosi");
+    }
+  };
+
+  const openEditModal = (user: any) => {
+    setEditError(null);
+    setEditForm({
+      fullName: user.fullName || "",
+      username: user.username || "",
+      password: "",
+    });
+    setEditingUser(user);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setIsEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const payload: any = {
+        fullName: editForm.fullName,
+        username: editForm.username.trim(),
+      };
+      if (editForm.password) payload.password = editForm.password;
+
+      const res = await fetch(`/api/staff/${editingUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setEditError(getErrorMessage(data.error, "Xodimni tahrirlashda xatolik"));
+        setIsEditSubmitting(false);
+        return;
+      }
+
+      setSuccessMsg("Xodim ma'lumotlari muvaffaqiyatli yangilandi");
+      setEditingUser(null);
+      setEditForm({ fullName: "", username: "", password: "" });
+      loadStaff();
+    } catch (e) {
+      setEditError("Server bilan bog‘lanishda xatolik");
+    } finally {
+      setIsEditSubmitting(false);
     }
   };
 
@@ -209,6 +267,14 @@ export default function StaffPage() {
 
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openEditModal(user)}
+                          className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100"
+                          title="Tahrirlash"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+
                         <button
                           onClick={() => handleToggleStatus(user)}
                           className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
@@ -331,6 +397,92 @@ export default function StaffPage() {
                   className="rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white hover:bg-[#15803D] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Staff Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Edit className="h-5 w-5 text-emerald-600" />
+                <h3 className="text-base font-bold text-slate-900">Xodimni Tahrirlash</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-3">
+              {editError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 font-medium flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700">F.I.SH (To‘liq ismi) *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.fullName}
+                  onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                  placeholder="Madina Karimova"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Login *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.username}
+                  onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                  placeholder="kassir_1"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Yangi Parol</label>
+                <input
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                  placeholder="O‘zgartirmasangiz bo‘sh qoldiring"
+                  autoComplete="new-password"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Bo‘sh qoldirilsa parol o‘zgarmaydi. Yangi parol kamida 5 ta belgi bo‘lsin.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditSubmitting}
+                  className="rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white hover:bg-[#15803D] disabled:opacity-50"
+                >
+                  {isEditSubmitting ? "Saqlanmoqda..." : "O‘zgarishlarni Saqlash"}
                 </button>
               </div>
             </form>

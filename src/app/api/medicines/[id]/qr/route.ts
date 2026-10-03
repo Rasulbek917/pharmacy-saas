@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +118,7 @@ export async function POST(
       medicine: updated,
     });
   } catch (error) {
-    console.error("Generate QR error:", error);
+    logger.error("Generate QR error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "QR kod yaratishda xatolik yuz berdi" } },
       { status: 500 }

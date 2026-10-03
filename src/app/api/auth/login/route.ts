@@ -6,6 +6,7 @@ import { getDaysRemaining } from "@/lib/formatters";
 import { logAudit } from "@/lib/audit";
 import { checkLoginRateLimit, recordFailedLoginAttempt, resetLoginRateLimit } from "@/lib/rateLimit";
 import { AuthUser, PharmacyStatus } from "@/types";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -224,7 +225,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error("Login error:", error);
+    logger.error("Login error", { error: error });
     return NextResponse.json(
       {
         success: false,

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { medicineSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: enriched });
   } catch (error) {
-    console.error("Medicines GET error:", error);
+    logger.error("Medicines GET error", { error: error });
     return NextResponse.json({ success: false, error: { code: "SERVER_ERROR", message: "Xatolik yuz berdi" } }, { status: 500 });
   }
 }
@@ -136,7 +137,7 @@ export async function POST(req: NextRequest) {
       data: medicine,
     });
   } catch (error) {
-    console.error("Medicine POST error:", error);
+    logger.error("Medicine POST error", { error: error });
     return NextResponse.json({ success: false, error: "Dori qo‘shishda xatolik" }, { status: 500 });
   }
 }

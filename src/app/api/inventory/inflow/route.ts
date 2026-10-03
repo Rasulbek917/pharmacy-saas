@@ -6,6 +6,7 @@ import { getExpiryStatus } from "@/lib/formatters";
 
 export const dynamic = "force-dynamic";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
       data: result,
     });
   } catch (error: any) {
-    console.error("Inflow error:", error);
+    logger.error("Inflow error", { error: error });
     return NextResponse.json(
       { success: false, error: "Omborga kirim qilishda xatolik yuz berdi" },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { getDaysRemaining } from "@/lib/formatters";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -131,7 +132,7 @@ export async function GET(req: NextRequest) {
       unreadCount,
     });
   } catch (error) {
-    console.error("Notifications GET error:", error);
+    logger.error("Notifications GET error", { error: error });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });
   }
 }
@@ -158,6 +159,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: "O‘qildi deb belgilandi" });
   } catch (error) {
+    logger.error("PATCH /api\notifications\route.ts xatolik", { error: error, route: "/api\notifications\route.ts" });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Xatolik yuz berdi" } },
       { status: 500 }
@@ -220,7 +222,7 @@ export async function DELETE(req: NextRequest) {
       message: "Bildirishnoma muvaffaqiyatli o’chirildi",
     });
   } catch (error) {
-    console.error("Notification DELETE error:", error);
+    logger.error("Notification DELETE error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: "Bildirishnomani o’chirishda xatolik yuz berdi" } },
       { status: 500 }

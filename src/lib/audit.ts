@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { logger } from "@/lib/logger";
 
 interface LogAuditParams {
   pharmacyId?: string | null;
@@ -35,7 +36,7 @@ export async function logAudit({
       },
     });
   } catch (error) {
-    console.error("Audit log error:", error);
+    logger.error("Audit log error", { error: error });
     // Don't crash main transaction if audit log fails
   }
 }
